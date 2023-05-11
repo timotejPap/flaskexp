@@ -1,4 +1,4 @@
-class kladivo(object):
+class Kladivo(object):
     def __init__(self):
         self.typ = "buracie"
         self.vaha = 5  # kg
@@ -7,7 +7,7 @@ class kladivo(object):
         return "Bum"
 
 if __name__ == "__main__":
-    obj = kladivo()
+    obj = Kladivo()
     obj.vaha = 10
     print(obj.vaha)
     obj.buchni_kladivom()

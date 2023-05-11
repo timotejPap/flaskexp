@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% block title %} Ceny kuracich kridel v SR {% endblock %}
+
+    {% for k in kurzy %}
+        {% if k < 0 %}
+            {% set color = "#ff0000" %}
+        {% else %}
+            {% set color = "#00ff00" %}
+    {% endif %}
+
+    <h3 style="color: {{ color }};">
+      {{ k }}
+    </h3>
+    {% endfor %}
+
+{% endblock %}
