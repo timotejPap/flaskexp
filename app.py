@@ -1,52 +1,79 @@
-from flask import Flask, render_template, abort, redirect, request
-import datetime
+import os
+from flask import Flask, render_template, redirect, abort, request
+from flask_wtf import FlaskForm, csrf
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
 
-app = Flask(__name__)
+# APP CONTEXT -- Nasa Flasa
+app=Flask(__name__)
+app.config["SECRET_KEY"] = os.urandom(32)
+app.config["CSFR_ENABLED"] = True  #
 
-@app.errorhandler(404)
-def page_not_found(error):
-    return render_template("404.html"), 404
+# Tu sa budu ukladat nase data
+info_list = ["test1", "test20", "test3"]
 
-@app.errorhandler(500)
-def internal_server_error(error):
-    return render_template("500.html"), 500
+# Formular
+class MojFormular(FlaskForm):
+    info = StringField("Info", validators=[DataRequired(message="Required")])
+    submit = SubmitField("Submit")
 
-
-# Routes
+# ROUTES
 @app.route("/")
 @app.route("/index")
-def main():
-    return "<h1>Ahoj ja som dzin z Flasku</h1>"
+def index():
+    return render_template("index.html")
+"""
+@app.route("/info", methods=["GET", "POST"])
+def info():
+    if request.method == "POST":
+        print(request.form.get("info"))
+        info_list.append(request.form.get('info'))
+        app.logger.info('INFO ULOZENA')
+    form = MojFormular()
+    app.logger.debug("Formular bol vytvoreny")
+    return render_template("info.html", form=form)
+"""
+"""
+# VERZIA 2
+@app.route("/info", methods=["GET"])
+def info_get():
+    form = MojFormular()
+    app.logger.debug("Formular bol vytvoreny")
+    return render_template("info.html", form=form)
 
-@app.route("/mojastranka")
-def moja():
-    return "<h2>Test mojej stranky</h2><br><p>Toto je moja skusobna stranka WEB</p>"
-@app.route("/vitajte")
-def welcome():
-    return render_template("vitajte.html")  # po slovensky
+@app.route("/info", methods=["POST"])
+def info_post():
+    if request.method == "POST":
+        print(request.form.get("info"))
+        info_list.append("Info ulozena")
+        return redirect("/submit")
+"""
+@app.route("/info", methods=["GET", "POST"])
+def info():
+    form = MojFormular()
+    app.logger.debug("Formular bol vytvoreny")
+    if request.method == "POST":
+        csrf.generate_csrf()
+        app.logger.debug("Sprava prisla")
+        #if request.form.get("info") != "":
+        if form.validate():
+            print(request.form.get("info"))
+            info_list.append(request.form.get('info'))
+            app.logger.debug("Sprava bola ulozena")
+        return redirect("/submit")
+    else:
+        app.logger.info("INFORMACIA NEBOLA ULOZENA")
 
-@app.route("/welcome")
-def vitajte():
-    return redirect("/vitajte")
+    return render_template("info.html", form=form)
 
-@app.route("/cas")
-def cas():
-    return render_template("main.html", cas=datetime.datetime.now())
+@app.route("/submit", methods=["GET"])
+def submit():
+    return render_template("submit.html")
 
-@app.route("/spravy/<int:index>", methods=["GET"])
-def spravy(index):
-    spravy = ["sprava1 - zlacnelo mydlo", "sprava2 - zajtra bude pekne", "sprava3 - Hotovo"]
-    try:
-        return render_template("spravy.html", msg=spravy[index])
-    except IndexError:
-        abort(404)
+@app.route("/list", methods=["GET"])
+def infolist():
+    return render_template("list.html", entries=info_list)
 
-@app.route("/kurzkk", methods=["GET"])
-def kurz():
-    kurz = [12, 34, 23, 78, 45, -5, -76, 15, 36, 89]
-    return render_template("kurzkk.html", kurzy=kurz)
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-# Development -> DevOps -> Produkcny server <- User
