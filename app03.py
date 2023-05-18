@@ -1,29 +1,15 @@
 # heslo na server: oKOSTUJ_uD4N4_t0FU
-import json
+
 import os
 from flask import Flask, render_template, redirect, abort, request, session, flash
 from flask_wtf import FlaskForm, csrf
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
-from flask_session import Session
-import sqlite3
-import json
-
-# SQLAlchemy - tabulky, sqlite, mariadb -
-
-# redis -
-
-# mongodb - dokumenty
 
 # APP CONTEXT -- Nasa Flasa
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(32)
 app.config["CSRF_ENABLED"] = True  #
-
-app.config["SESSION TYPE"] = "filesystem"  # tu sa dava adresa serveru
-app.config["SESSION_PERMANENT"] = False
-Session(app)
-
 
 # Tu sa budu ukladat nase data
 info_list = ["test1", "test20", "test3"]
@@ -33,22 +19,12 @@ class MojFormular(FlaskForm):
     info = StringField("Info", validators=[DataRequired(message="Required")])
     submit = SubmitField("Submit")
 
-DATABASE = "appdb.db"
-
-def add_record(info):
-    with sqlite3.connect(DATABASE) as db:
-        cur = db.cursor()
-        sql_cmd = "INSERT INTO info VALUES(?,?)"
-        data = (1, info)
-        cur.execute(sql_cmd, data)
-        db.commit()
-        return True
-
 # ROUTES
 @app.route("/")
 @app.route("/index")
 def index():
     return render_template("index.html")
+
 
 @app.route("/setsession")
 def setsession():
@@ -75,6 +51,33 @@ def delsession():
     app.logger.debug("SESSION BOLA VYMAZANA")
     return redirect("/index")
 
+
+"""  VERZIA 1
+@app.route("/info", methods=["GET", "POST"])
+def info():
+    if request.method == "POST":
+        print(request.form.get("info"))
+        info_list.append(request.form.get('info'))
+        app.logger.info('INFO ULOZENA')
+    form = MojFormular()
+    app.logger.debug("Formular bol vytvoreny")
+    return render_template("info.html", form=form)
+
+
+# VERZIA 2
+@app.route("/info", methods=["GET"])
+def info_get():
+    form = MojFormular()
+    app.logger.debug("Formular bol vytvoreny")
+    return render_template("info.html", form=form)
+
+@app.route("/info", methods=["POST"])
+def info_post():
+    if request.method == "POST":
+        print(request.form.get("info"))
+        info_list.append("Info ulozena")
+        return redirect("/submit")
+"""
 @app.route("/info", methods=["GET", "POST"])
 def info():
     form = MojFormular()
@@ -86,14 +89,12 @@ def info():
         if form.validate():
             print(request.form.get("info"))
             #info_list.append(request.form.get('info'))
-            session["info"] = request.form["info"]  # tu sa nacita z formulara info
-            with open(file="session_info.json", mode="a", encoding="utf8") as f:
-                json.dump(fp=f, obj=session, indent=4)
-            add_record(session["info"])
+            session["info"] = request.form["info"]
             app.logger.debug("Sprava bola ulozena")
         return redirect("/submit")
     else:
         app.logger.info("INFORMACIA NEBOLA ULOZENA")
+
     return render_template("info.html", form=form)
 
 @app.route("/submit", methods=["GET"])
