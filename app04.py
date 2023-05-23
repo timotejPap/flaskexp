@@ -1,77 +1,48 @@
 # heslo na server: oKOSTUJ_uD4N4_t0FU
+import json
 import os
-from flask import Flask, render_template, redirect, abort, request, url_for, session, flash
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_wtf import FlaskForm, csrf, form
+from flask import Flask, render_template, redirect, abort, request, session, flash
+from flask_wtf import FlaskForm, csrf
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from flask_session import Session
-#import sqlite3
+import sqlite3
 import json
+
+# SQLAlchemy - tabulky, sqlite, mariadb -
+
+# redis -
+
+# mongodb - dokumenty
 
 # APP CONTEXT -- Nasa Flasa
 app = Flask(__name__)
-
 app.config["SECRET_KEY"] = os.urandom(32)
-app.config["CSRF_ENABLED"] = True  # Cross Site Request Forgery
-app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
-app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
+app.config["CSRF_ENABLED"] = True  #
+
+app.config["SESSION TYPE"] = "filesystem"  # tu sa dava adresa serveru
+app.config["SESSION_PERMANENT"] = False
+Session(app)
 
 
-login_manager = LoginManager()
-login_manager.init_app(app)
+# Tu sa budu ukladat nase data
+info_list = ["test1", "test20", "test3"]
 
-# MOCK
-users = {"andrej@gmail.com": {"password":"halabala"}, "filip@gmail.com": {"password":"netusim"}}
+# FORMULAR
+class MojFormular(FlaskForm):
+    info = StringField("Info", validators=[DataRequired(message="Required")])
+    submit = SubmitField("Submit")
 
-class User(UserMixin):
-    pass
+DATABASE = "appdb.db"
 
-# LOGIN MANAGER LOADER
-@login_manager.user_loader
-def user_loader(email):
-    if email not in users:
-        return
-    user = User()
-    user.id = email
-    return user
-
-@login_manager.request_loader
-def request_loader(request):
-    email = request.form.get("email")
-    if email not in users:
-        return
-    user = User()
-    user.id = email
-    return user
-
-@app.route("/login", methods=(["GET", "POST"]))
-def login():
-    if request.method == "GET":
-        return """
-        <form action="login" method="POST">
-        <input type="text" name="email" id="email" placeholder="email"
-        <input type="password" name="password" id="password" placeholder="password"
-        <input type="submit" name="submit"
-        </form>
-        """
-    email = request.form["email"]
-    if email in users and request.form["password"] == users["email"]["password"]:
-        user = User()
-        user.id = email
-        login_user(user)
-        return redirect(url_for("protected"))
-    return "<h2>BAD LOGIN</h2>"
-
-@app.route("/protected")
-@login_required
-def protected():
-    return "nalogovany ako uzivatel" + current_user.id
-@app.route("/logout")
-def logout():
-    logout.user()
-    return "odhlaseny uzivatel"
-
+def add_record(info):
+    with sqlite3.connect(DATABASE) as db:
+        cur = db.cursor()
+        sql_cmd = "INSERT INTO info VALUES(?,?)"
+        data = (1, info)
+        cur.execute(sql_cmd, data)
+        db.commit()
+        return True
 
 # ROUTES
 @app.route("/")
@@ -111,13 +82,14 @@ def info():
     if request.method == "POST":
         csrf.generate_csrf()
         app.logger.debug("Sprava prisla")
+        #if request.form.get("info") != "":
         if form.validate():
-            print(request.form.get("pwd"))
+            print(request.form.get("info"))
             #info_list.append(request.form.get('info'))
             session["info"] = request.form["info"]  # tu sa nacita z formulara info
-            #with open(file="session_info.json", mode="a", encoding="utf8") as f:
-                #json.dump(fp=f, obj=session, indent=4)
-            #add_record(session["info"])
+            with open(file="session_info.json", mode="a", encoding="utf8") as f:
+                json.dump(fp=f, obj=session, indent=4)
+            add_record(session["info"])
             app.logger.debug("Sprava bola ulozena")
         return redirect("/submit")
     else:
